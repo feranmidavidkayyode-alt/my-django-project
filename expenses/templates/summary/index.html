@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Summary{% endblock %}
+
+{% block content %}
+<div class="container mx-auto my-10 text-center">
+  <h1 class="text-4xl font-bold text-indigo-600 mb-8">
+    Your Financial Summary
+  </h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-green-100 rounded-xl p-6 shadow">
+      <h3 class="text-lg font-semibold">Total Income</h3>
+      <p class="text-3xl font-bold text-green-700">{{ total_income }}</p>
+    </div>
+    <div class="bg-red-100 rounded-xl p-6 shadow">
+      <h3 class="text-lg font-semibold">Total Expenses</h3>
+      <p class="text-3xl font-bold text-red-700">{{ total_expenses }}</p>
+    </div>
+    <div class="bg-blue-100 rounded-xl p-6 shadow">
+      <h3 class="text-lg font-semibold">Net Balance</h3>
+      <p class="text-3xl font-bold {% if balance < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+        {{ balance }}
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <canvas id="incomeVsExpenses"></canvas>
+    <canvas id="expenseCategoryChart"></canvas>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx1 = document.getElementById('incomeVsExpenses');
+new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: ['Income', 'Expenses'],
+    datasets: [{
+      data: [{{ total_income }}, {{ total_expenses }}],
+      backgroundColor: ['#34D399','#F87171']
+    }]
+  }
+});
+
+const ctx2 = document.getElementById('expenseCategoryChart');
+new Chart(ctx2, {
+  type: 'doughnut',
+  data: {
+    labels: ['Food','Transport','Bills'],
+    datasets: [{
+      data: [40,30,30],
+      backgroundColor: ['#6366F1','#F59E0B','#EF4444']
+    }]
+  }
+});
+</script>
+{% endblock %}

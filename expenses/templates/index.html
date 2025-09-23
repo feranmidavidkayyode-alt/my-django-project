@@ -1,0 +1,52 @@
+<a href="{% url 'expense-edit' expense.id %}">Edit</a>
+    | <a href="{% url 'expense-delete' expense.id %}">Delete</a>    
+</td>
+</tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center text-gray-500 py-4">
+
+                No expenses recorded yet. <a href="{% url 'expense-add' %}" class="text-indigo-600 hover:underline">Add your first expense</a>.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>            
+
+<div class="mt-6">
+    <nav class="flex justify-center">
+        <ul class="inline-flex -space-x-px">
+            {% if page_obj.has_previous %}
+            <li>
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100">Previous</a>
+            </li>
+            {% else %}
+            <li>
+                <span class="px-3 py-2 bg-gray-200 border border-gray-300 text-gray-400 cursor-not-allowed">Previous</span>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li>
+                        <span class="px-3 py-2 bg-indigo-600 text-white border border-gray-300">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li>
+                        <a href="?page={{ num }}" class="px-3 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li>
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-100">Next</a>
+            </li>
+            {% else %}
+            <li>
+                <span class="px-3 py-2 bg-gray-200 border border-gray-300 text-gray-400 cursor-not-allowed">Next</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>

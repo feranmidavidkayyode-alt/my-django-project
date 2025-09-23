@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Income Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="text-4xl font-bold text-center text-green-600 animate-pulse mt-6">
+    Your Income Dashboard
+</h1>
+
+<div class="flex justify-end mb-4">
+    <a href="{% url 'add-income' %}" class="bg-green-600 text-white px-4 py-2 rounded-xl shadow hover:bg-green-700 transition">
+        ➕ Add Income
+    </a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+  {% for item in page_obj %}
+  <div data-aos="fade-up" class="bg-green-50 rounded-2xl shadow-lg p-6 hover:scale-105 transition-transform duration-300">
+      <p class="text-xl font-semibold">{{ item.category }}</p>
+      <p class="text-gray-500">💲 {{ item.amount }}</p>
+      <p class="text-gray-400 text-sm">📅 {{ item.date }}</p>
+      <p class="text-gray-600">{{ item.description }}</p>
+
+      <div class="mt-4 flex gap-2">
+          <a href="{% url 'edit-income' item.id %}" class="bg-blue-500 text-white px-3 py-1 rounded">Edit</a>
+          <a href="{% url 'delete-income' item.id %}" class="bg-red-500 text-white px-3 py-1 rounded">Delete</a>
+      </div>
+  </div>
+  {% empty %}
+  <p class="text-center text-gray-500">No income records yet. Start adding some! 💸</p>
+  {% endfor %}
+</div>
+
+<canvas id="incomeChart" class="mt-10"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch("{% url 'income-summary' %}")
+.then(response => response.json())
+.then(data => {
+    const ctx = document.getElementById('incomeChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: 'Income by Category',
+                data: Object.values(data),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+});
+</script>
+{% endblock %}
