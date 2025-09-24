@@ -54,37 +54,56 @@ def index(request: HttpRequest) -> HttpResponse:
 
 # ➕ Add Expense
 @login_required(login_url="/authentication/login")
+
+@login_required(login_url="/authentication/login")
 def add_expense(request: HttpRequest) -> HttpResponse:
     categories = Category.objects.all()
+    values = request.POST if request.method == "POST" else {}
     if request.method == "POST":
         amount_str = request.POST.get("amount") or ""
         description = request.POST.get("description") or ""
         date_str = request.POST.get("expense_date") or ""
         category_name = request.POST.get("category") or ""
 
+        # Validate amount
         try:
             amount_value = Decimal(amount_str)
         except Exception:
             messages.error(request, "Invalid amount")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+            return render(request, "expenses/add_expense.html", {
+                "categories": categories,
+                "values": values
+            })
 
+        # Validate description
         if not description.strip():
             messages.error(request, "Description is required")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+            return render(request, "expenses/add_expense.html", {
+                "categories": categories,
+                "values": values
+            })
 
+        # Validate date
         try:
             expense_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        except ValueError:
+        except Exception:
             messages.error(request, "Invalid date format")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+            return render(request, "expenses/add_expense.html", {
+                "categories": categories,
+                "values": values
+            })
 
-        # Get Category instance
+        # Validate category
         try:
             category_obj = Category.objects.get(name=category_name)
         except Category.DoesNotExist:
             messages.error(request, "Selected category does not exist")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+            return render(request, "expenses/add_expense.html", {
+                "categories": categories,
+                "values": values
+            })
 
+        # Save expense
         Expense.objects.create(
             owner=request.user,
             amount=amount_value,
@@ -92,15 +111,10 @@ def add_expense(request: HttpRequest) -> HttpResponse:
             expense_date=expense_date,
             category=category_obj,
         )
-
         messages.success(request, "Expense saved successfully")
         return redirect("expenses")
 
-    return render(request, "expenses/add_expense.html", {"categories": categories})
-
-
-# ✏️ Edit Expense
-@login_required(login_url="/authentication/login")
+    return render(request, "expenses/add_expense.html", {"categories": categories, "values": values})
 def edit_expense(request: HttpRequest, pk: int) -> HttpResponse:
     expense = get_object_or_404(Expense, id=pk, owner=request.user)
     categories = Category.objects.all()

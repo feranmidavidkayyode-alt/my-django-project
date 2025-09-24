@@ -1,49 +1,54 @@
-# ➕ Add Expense
-@login_required(login_url="/authentication/login")
-def add_expense(request: HttpRequest) -> HttpResponse:
-    categories = Category.objects.all()
-    if request.method == "POST":
-        amount_str = request.POST.get("amount") or ""
-        description = request.POST.get("description") or ""
-        date_str = request.POST.get("expense_date") or ""   # ✅ match template field
-        category_name = request.POST.get("category") or ""
+{% extends 'base.html' %}
 
-        # Validate amount
-        try:
-            amount_value = Decimal(amount_str)
-        except Exception:
-            messages.error(request, "Invalid amount")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+{% block title %}Add Expense{% endblock %}
 
-        # Validate description
-        if not description.strip():
-            messages.error(request, "Description is required")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+{% block content %}
+<div class="max-w-3xl mx-auto py-8">
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-2xl font-semibold mb-4">Add Expense</h2>
 
-        # Validate date
-        try:
-            expense_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        except ValueError:
-            messages.error(request, "Invalid date format")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 px-4 py-2 rounded {{ message.tags }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
 
-        # Validate category
-        try:
-            category_obj = Category.objects.get(name=category_name)
-        except Category.DoesNotExist:
-            messages.error(request, "Selected category does not exist")
-            return render(request, "expenses/add_expense.html", {"categories": categories})
+    <form method="POST" novalidate>
+      {% csrf_token %}
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="block text-sm font-medium">Amount</label>
+          <input type="text" name="amount" value="{{ values.amount|default:'' }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" placeholder="e.g. 1200.50">
+        </div>
 
-        # Save expense
-        Expense.objects.create(
-            owner=request.user,  # ✅ match model field
-            amount=amount_value,
-            description=description,
-            expense_date=expense_date,
-            category=category_obj,
-        )
+        <div>
+          <label class="block text-sm font-medium">Description</label>
+          <input type="text" name="description" value="{{ values.description|default:'' }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" placeholder="What did you buy?">
+        </div>
 
-        messages.success(request, "Expense saved successfully")
-        return redirect("expenses")
+        <div>
+          <label class="block text-sm font-medium">Date</label>
+          <input type="date" name="expense_date" value="{{ values.expense_date|default:'' }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+        </div>
 
-    return render(request, "expenses/add_expense.html", {"categories": categories})
+        <div>
+          <label class="block text-sm font-medium">Category</label>
+          <select name="category" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+            <option value="">-- select category --</option>
+            {% for cat in categories %}
+              <option value="{{ cat.name }}" {% if values.category == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Save Expense</button>
+          <a href="{% url 'expenses' %}" class="ml-3 text-sm text-gray-600">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

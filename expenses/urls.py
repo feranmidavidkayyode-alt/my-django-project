@@ -11,4 +11,6 @@ urlpatterns = [
     path("stats/", views.stats_view, name="stats"),
     path("category-summary/", views.expense_category_summary,
          name="expense-category-summary"),
+    path("add-expense/", views.add_expense, name="add_expense"),
+
 ]
