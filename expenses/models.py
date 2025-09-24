@@ -15,14 +15,8 @@ class Category(models.Model):
 
 class Expense(models.Model):
     # always use 'user' for consistency
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     description = models.TextField()
     expense_date = models.DateField(default=now)
-
-    class Meta:
-        ordering = ["-expense_date"]
-
-    def __str__(self):
-        return f"{self.user.username} - {self.amount} ({self.category.name})"

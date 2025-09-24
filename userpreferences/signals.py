@@ -8,4 +8,4 @@ from .models import UserPreference
 def create_user_preference(sender, instance, created, **kwargs):
     if created:
         # Automatically create a UserPreference for every new user
-        UserPreference.objects.create(user=instance, currency='USD')
+        UserPreference.objects.create(owner=instance, currency='USD')

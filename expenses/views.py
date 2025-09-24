@@ -20,11 +20,11 @@ def search_expenses(request: HttpRequest) -> JsonResponse:
     if request.method == "POST":
         search_str = json.loads(request.body).get("searchText", "")
         expenses = (
-            Expense.objects.filter(amount__startswith=search_str, user=request.user) |
-            Expense.objects.filter(expense_date__startswith=search_str, user=request.user) |
-            Expense.objects.filter(description__icontains=search_str, user=request.user) |
+            Expense.objects.filter(amount__startswith=search_str, owner=request.user) |
+            Expense.objects.filter(expense_date__startswith=search_str, owner=request.user) |
+            Expense.objects.filter(description__icontains=search_str, owner=request.user) |
             Expense.objects.filter(
-                category__name__icontains=search_str, user=request.user)
+                category__name__icontains=search_str, owner=request.user)
         )
         return JsonResponse(list(expenses.values()), safe=False)
     return JsonResponse([], safe=False)
@@ -34,14 +34,14 @@ def search_expenses(request: HttpRequest) -> JsonResponse:
 @login_required(login_url="/authentication/login")
 def index(request: HttpRequest) -> HttpResponse:
     expenses = Expense.objects.filter(
-        user=request.user).order_by("-expense_date")
+        owner=request.user).order_by("-expense_date")
 
     paginator = Paginator(expenses, 5)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
     user_preference, _ = UserPreference.objects.get_or_create(
-        user=request.user, defaults={"currency": "USD"}
+        owner=request.user, defaults={"currency": "USD"}
     )
 
     context = {
@@ -59,7 +59,7 @@ def add_expense(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         amount_str = request.POST.get("amount") or ""
         description = request.POST.get("description") or ""
-        date_str = request.POST.get("date") or ""
+        date_str = request.POST.get("expense_date") or ""
         category_name = request.POST.get("category") or ""
 
         try:
@@ -86,7 +86,7 @@ def add_expense(request: HttpRequest) -> HttpResponse:
             return render(request, "expenses/add_expense.html", {"categories": categories})
 
         Expense.objects.create(
-            user=request.user,
+            owner=request.user,
             amount=amount_value,
             description=description,
             expense_date=expense_date,
@@ -102,13 +102,13 @@ def add_expense(request: HttpRequest) -> HttpResponse:
 # ✏️ Edit Expense
 @login_required(login_url="/authentication/login")
 def edit_expense(request: HttpRequest, pk: int) -> HttpResponse:
-    expense = get_object_or_404(Expense, id=pk, user=request.user)
+    expense = get_object_or_404(Expense, id=pk, owner=request.user)
     categories = Category.objects.all()
 
     if request.method == "POST":
         amount_str = request.POST.get("amount") or ""
         description = request.POST.get("description") or ""
-        date_str = request.POST.get("date") or ""
+        date_str = request.POST.get("expense_date") or ""
         category_name = request.POST.get("category") or ""
 
         try:
@@ -147,7 +147,7 @@ def edit_expense(request: HttpRequest, pk: int) -> HttpResponse:
 # ❌ Delete Expense
 @login_required(login_url="/authentication/login")
 def delete_expense(request: HttpRequest, pk: int) -> HttpResponse:
-    expense = get_object_or_404(Expense, id=pk, user=request.user)
+    expense = get_object_or_404(Expense, id=pk, owner=request.user)
     expense.delete()
     messages.success(request, "Expense removed successfully")
     return redirect("expenses")
@@ -160,7 +160,8 @@ def expense_category_summary(request: HttpRequest) -> JsonResponse:
     six_months_ago = today - timedelta(days=30 * 6)
 
     expenses = Expense.objects.filter(
-        user=request.user, expense_date__gte=six_months_ago, expense_date__lte=today)
+        owner=request.user, expense_date__gte=six_months_ago, expense_date__lte=today
+    )
 
     summary = {}
     for category in Category.objects.all():
@@ -181,8 +182,8 @@ def stats_view(request: HttpRequest) -> HttpResponse:
 # 📊 Summary View
 @login_required(login_url="/authentication/login")
 def summary_view(request: HttpRequest) -> HttpResponse:
-    expenses = Expense.objects.filter(user=request.user)
-    incomes = Income.objects.filter(user=request.user)
+    expenses = Expense.objects.filter(owner=request.user)
+    incomes = Income.objects.filter(owner=request.user)
 
     total_expenses = expenses.aggregate(total=Sum("amount"))[
         "total"] or Decimal("0.00")

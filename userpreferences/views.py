@@ -16,10 +16,10 @@ def index(request):
         for k, v in data.items():
             currency_data.append({'name': k, 'value': v})
 
-    exists = UserPreference.objects.filter(user=request.user).exists()
+    exists = UserPreference.objects.filter(owner=request.user).exists()
     user_preferences = None
     if exists:
-        user_preferences = UserPreference.objects.get(user=request.user)
+        user_preferences = UserPreference.objects.get(owner=request.user)
     if request.method == 'GET':
 
         return render(request, 'preferences/index.html', {'currencies': currency_data,
@@ -31,6 +31,7 @@ def index(request):
             user_preferences.currency = currency
             user_preferences.save()
         else:
-            UserPreference.objects.create(user=request.user, currency=currency)
+            UserPreference.objects.create(
+                owner=request.user, currency=currency)
         messages.success(request, 'Changes saved')
         return render(request, 'preferences/index.html', {'currencies': currency_data, 'user_preferences': user_preferences})

@@ -1,32 +1,49 @@
-{% extends 'base.html' %}
-{% block title %}Add Expense{% endblock %}
-{% block content %}
-<div class="max-w-lg mx-auto bg-white shadow rounded-lg p-6" data-aos="fade-up">
-    <h2 class="text-xl font-bold text-indigo-600 mb-4">➕ Add Expense</h2>
-    <form method="POST" action="{% url 'expense-add' %}">
-        {% csrf_token %}
-        <div class="mb-4">
-            <label class="block text-sm font-medium mb-1">Amount</label>
-            <input type="number" name="amount" step="0.01" class="w-full border p-2 rounded" required>
-        </div>
-        <div class="mb-4">
-            <label class="block text-sm font-medium mb-1">Description</label>
-            <input type="text" name="description" class="w-full border p-2 rounded" required>
-        </div>
-        <div class="mb-4">
-            <label class="block text-sm font-medium mb-1">Date</label>
-            <input type="date" name="expense_date" class="w-full border p-2 rounded" required>
-        </div>
-        <div class="mb-4">
-            <label class="block text-sm font-medium mb-1">Category</label>
-            <select name="category" class="w-full border p-2 rounded">
-                {% for category in categories %}
-                    <option value="{{ category.name }}">{{ category.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">Save</button>
-        <a href="{% url 'expenses' %}" class="ml-4 text-gray-600 hover:underline">Cancel</a>
-    </form>
-</div>
-{% endblock %}
+# ➕ Add Expense
+@login_required(login_url="/authentication/login")
+def add_expense(request: HttpRequest) -> HttpResponse:
+    categories = Category.objects.all()
+    if request.method == "POST":
+        amount_str = request.POST.get("amount") or ""
+        description = request.POST.get("description") or ""
+        date_str = request.POST.get("expense_date") or ""   # ✅ match template field
+        category_name = request.POST.get("category") or ""
+
+        # Validate amount
+        try:
+            amount_value = Decimal(amount_str)
+        except Exception:
+            messages.error(request, "Invalid amount")
+            return render(request, "expenses/add_expense.html", {"categories": categories})
+
+        # Validate description
+        if not description.strip():
+            messages.error(request, "Description is required")
+            return render(request, "expenses/add_expense.html", {"categories": categories})
+
+        # Validate date
+        try:
+            expense_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(request, "Invalid date format")
+            return render(request, "expenses/add_expense.html", {"categories": categories})
+
+        # Validate category
+        try:
+            category_obj = Category.objects.get(name=category_name)
+        except Category.DoesNotExist:
+            messages.error(request, "Selected category does not exist")
+            return render(request, "expenses/add_expense.html", {"categories": categories})
+
+        # Save expense
+        Expense.objects.create(
+            owner=request.user,  # ✅ match model field
+            amount=amount_value,
+            description=description,
+            expense_date=expense_date,
+            category=category_obj,
+        )
+
+        messages.success(request, "Expense saved successfully")
+        return redirect("expenses")
+
+    return render(request, "expenses/add_expense.html", {"categories": categories})
